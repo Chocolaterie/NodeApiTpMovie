@@ -1,6 +1,11 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
+const helper = require('./helper.js');
+
+// La clé
+const secretJwtKey = 'UnBonMatelasEmma';
 
 // ============= BDD =======================/
 // Preparer un model (une classe Person)
@@ -78,6 +83,77 @@ app.post("/movies", async (request, response) => {
     }
 
     return response.json({ message : "error"});
+});
+
+/**
+ * Une fonction qui vérifie la validité de token 
+ * @param {*} request 
+ * @returns 
+ */
+function tokenVerify(request){
+    const token = request.headers['authorization'];
+
+    // probleme 1 pas de token
+    if (!token){
+        return false;
+    }
+
+    // Probleme 2 : token non valide
+    jwt.verify(token, secretJwtKey, (err, decoded) => {
+        // Si erreur
+        if (err){
+            return false;
+        }
+        // si valide
+        // Decoded => objet encodé (possiblit" de l'injecter dans la requete si besoin)
+        request.user = decoded;
+        // passer le middle (donc ok)
+        return true;
+    });
+
+    return false;
+}
+
+/**
+ * Tester la validité du token dans un middleware
+ * @param {*} request 
+ * @param {*} response 
+ * @param {*} next 
+ * @returns 
+ */
+function tokenVerifyMiddlware(request, response, next){
+
+    if (tokenVerify(request)){
+        next();
+    }
+    return response.status(400).json(buildResponseJson("700", "Token invalide", null));
+}
+
+// Login
+app.post("/login", async (request, response) => {
+   
+    // J'att un objet user depuis le post
+    const user = { email: request.body.email };
+
+    // TODO : Verifier si couple user/password correcte
+
+    // Génération du token
+    const token = jwt.sign(user, secretJwtKey, { expiresIn: '1h'});
+
+    return helper.buildResponse(response, "200", "Connecté(e) aves succès", token);
+});
+
+/**
+ * Route pour verifier token encore valide
+ */
+app.get("/verify-token", async (request, response) => {
+   
+    // Si token valide alors code : 200
+    if (tokenVerify(request)){
+        return helper.buildResponse(response, "200", "Token valide", true);
+    }
+    // Sinon code 740
+    return helper.buildResponse(response, "740", "Token invalide", false);
 });
 
 

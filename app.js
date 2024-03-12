@@ -11,6 +11,8 @@ const secretJwtKey = 'UnBonMatelasEmma';
 // Preparer un model (une classe Person)
 const Movie = mongoose.model('Movie', { id: Number, title: String, synopsis: String, duration: String, year: String, thumbnail_url: String }, "movies");
 
+const User = mongoose.model('User', { email: String, pseudo: String, password: String }, "users");
+
 // Url mongo
 const urlMongo = "mongodb://127.0.0.1:27017/db_movie";
 
@@ -85,6 +87,56 @@ app.post("/movies", async (request, response) => {
     return response.json({ message : "error"});
 });
 
+app.post("/signup", async (request, response) => {
+    // methode 1
+    //const data = request.body;
+
+    // methode 2
+    const data = { email: request.body.email, pseudo: request.body.pseudo, password: request.body.password};
+   
+    // instancer le model mongo
+    const user = User(data);
+
+    // Save en base
+    const savedUser = await user.save();
+
+    // Si reussi
+    if (savedUser){
+        return helper.buildResponse(response, "200", "Inscription complète", savedUser);
+    }
+
+    return helper.buildResponse(response, "700", "Erreur technique dans l'inscription", null);
+});
+
+// Oublier mot de passe
+app.post("/reset-password", async (request, response) => {
+    // methode 2
+    const data = { email: request.body.email }
+   
+    // Cherche un user
+    const user = await User.findOne({email : data.email});
+
+    // Si user existe
+    if (user){
+        // Generer un nouveau password
+        const newPassword = (Math.random() + 1).toString(36).substring(7);
+
+        // Modifier le paswword dans le model
+        user.password = newPassword;
+
+        // Sauvegarde en base
+        const validateUser = await user.save();
+
+        // Si reussi
+        if (validateUser){
+            return helper.buildResponse(response, "200", "Un mail vous a été envoyé", true);
+        }
+    }
+
+    console.log("Erreur technique");
+    return helper.buildResponse(response, "201", "Un mail vous a été envoyé", false);
+});
+
 /**
  * Une fonction qui vérifie la validité de token 
  * @param {*} request 
@@ -133,14 +185,21 @@ function tokenVerifyMiddlware(request, response, next){
 app.post("/login", async (request, response) => {
    
     // J'att un objet user depuis le post
-    const user = { email: request.body.email };
+    const user = { email: request.body.email, password: request.body.password };
 
-    // TODO : Verifier si couple user/password correcte
+    // Verifier si couple user/password correcte
+    const foundUser = await User.findOne({ email: user.email, password : user.password });
 
-    // Génération du token
-    const token = jwt.sign(user, secretJwtKey, { expiresIn: '1h'});
+    // Si user trouvé en base
+    if (foundUser){
+        // Génération du token
+        const token = jwt.sign(user, secretJwtKey, { expiresIn: '1h'});
 
-    return helper.buildResponse(response, "200", "Connecté(e) aves succès", token);
+        return helper.buildResponse(response, "200", "Connecté(e) aves succès", token);
+    }
+   
+    // Par défaut Erreur
+    return helper.buildResponse(response, "726", "Couple email/mot de passe erroné", "");
 });
 
 /**

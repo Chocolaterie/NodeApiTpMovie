@@ -53,8 +53,8 @@ app.get("/movies", async (request, response) => {
     // Select all avec mongodb
     const movies = await Movie.find();
 
-    // Retourner le json des personnes
-    response.json(movies);
+    // Retourner la réponse
+    return helper.buildResponse(response, "200", "Liste des films", movies);
 });
 
 app.get("/movies/:id", async (request, response) => {
@@ -79,12 +79,12 @@ app.post("/movies", async (request, response) => {
     // -- si trouver
     // En edition
     if (movie) {
-        await Movie.findOneAndUpdate({ id: data.id }, data);
+        const updatedMovie = await Movie.findOneAndUpdate({ id: data.id }, data);
 
-        return response.json(data);
+        return helper.buildResponse(response, "200", "Modification avec succès", updatedMovie);
     }
 
-    return response.json({ message : "error"});
+    return helper.buildResponse(response, "700", "Erreur inconnue", null);
 });
 
 app.post("/signup", async (request, response) => {

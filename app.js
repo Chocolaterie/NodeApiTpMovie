@@ -65,7 +65,7 @@ app.get("/movies/:id", async (request, response) => {
 
     const movie = await Movie.findOne({ id: idRequest });
 
-    response.json(movie);
+    return helper.buildResponse(response, "200", "Film récupéré avec succès", movie);
 });
 
 app.post("/movies", async (request, response) => {

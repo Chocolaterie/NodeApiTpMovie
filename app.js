@@ -193,7 +193,7 @@ app.post("/login", async (request, response) => {
     // Si user trouvé en base
     if (foundUser){
         // Génération du token
-        const token = jwt.sign(user, secretJwtKey, { expiresIn: '1h'});
+        const token = jwt.sign(user, secretJwtKey, { expiresIn: '4s'});
 
         return helper.buildResponse(response, "200", "Connecté(e) aves succès", token);
     }

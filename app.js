@@ -142,7 +142,7 @@ app.post("/reset-password", async (request, response) => {
  * @param {*} request 
  * @returns 
  */
-function tokenVerify(request){
+async function tokenVerify(request)  {
     const token = request.headers['authorization'];
 
     // probleme 1 pas de token
@@ -151,19 +151,23 @@ function tokenVerify(request){
     }
 
     // Probleme 2 : token non valide
-    jwt.verify(token, secretJwtKey, (err, decoded) => {
+    // ATTENTION => verify est asychrone donc il faut l'await
+    let verifyResult = false;
+    await jwt.verify(token, secretJwtKey, (err, decoded) => {
         // Si erreur
         if (err){
-            return false;
+            return verifyResult;
         }
         // si valide
-        // Decoded => objet encodé (possiblit" de l'injecter dans la requete si besoin)
+        // Decoded => objet encodé (possiblité de l'injecter dans la requete si besoin)
         request.user = decoded;
         // passer le middle (donc ok)
-        return true;
+
+        verifyResult = true;
+        return verifyResult;
     });
 
-    return false;
+    return verifyResult;
 }
 
 /**
@@ -173,9 +177,11 @@ function tokenVerify(request){
  * @param {*} next 
  * @returns 
  */
-function tokenVerifyMiddlware(request, response, next){
+async function tokenVerifyMiddlware(request, response, next) {
 
-    if (tokenVerify(request)){
+    const tokenVerifyResult = await tokenVerify(request);
+
+    if (tokenVerifyResult){
         next();
     }
     return response.status(400).json(buildResponseJson("700", "Token invalide", null));
@@ -207,8 +213,11 @@ app.post("/login", async (request, response) => {
  */
 app.get("/verify-token", async (request, response) => {
    
+    // Async donc await
+    const tokenVerifyResult = await tokenVerify(request);
+
     // Si token valide alors code : 200
-    if (tokenVerify(request)){
+    if (tokenVerifyResult){
         return helper.buildResponse(response, "200", "Token valide", true);
     }
     // Sinon code 740

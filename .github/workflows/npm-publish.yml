@@ -26,9 +26,9 @@ jobs:
       - name: Deploy to Droplet
         uses: appleboy/scp-action@master
         with: 
-          host: 46.101.2.202
-          username : root
-          password: qUk2!6q^M2=%YC
+          host: ${{ secrets.HOST }}
+          username : ${{ secrets.USERNAME }}
+          password: ${{ secrets.PASSWORD }}
           source: "*"
           target: /home/
 

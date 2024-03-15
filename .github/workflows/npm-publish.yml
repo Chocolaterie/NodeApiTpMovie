@@ -7,11 +7,28 @@ name: Node.js Package
 on: push
 
 jobs:
-  build:
+  deploy:
+    name : Ubuntu
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - name : Pull project to Ubuntu
+        uses: actions/checkout@v3
+
+      - name : Setup node on Ubuntu
+        uses: actions/setup-node@v3
         with:
           node-version: 18
-      - run: npm ci
+
+      - name : Install project dependencies
+        run: npm ci
+
+      - name: Deploy to Droplet
+        uses: appleboy/scp-action@master
+        with: 
+          host: 46.101.2.202
+          username : root
+          password: qUk2!6q^M2=%YC
+          source: "*"
+          target: /home/
+

@@ -5,7 +5,7 @@
     "description": "Mon API",
     "version": "1.0.0"
   },
-  "host": "localhost:3000",
+  "host": "46.101.2.202:3000",
   "basePath": "/",
   "schemes": [
     "http"
@@ -15,8 +15,8 @@
       "get": {
         "description": "Récupérer la liste des personnes",
         "responses": {
-          "200": {
-            "description": "OK"
+          "default": {
+            "description": ""
           }
         }
       },
@@ -37,8 +37,8 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "OK"
+          "default": {
+            "description": ""
           }
         }
       }
@@ -55,8 +55,8 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "OK"
+          "default": {
+            "description": ""
           }
         }
       }

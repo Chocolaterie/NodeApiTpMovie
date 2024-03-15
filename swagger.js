@@ -7,7 +7,7 @@ const doc = {
         title: 'Mon API',
         description : 'Mon API',
     },
-    host: 'localhost:3000',
+    host: '46.101.2.202:3000',
     basePath: '/',
     schemes: ['http']
 };

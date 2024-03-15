@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const helper = require('./helper.js');
@@ -6,6 +7,29 @@ const helper = require('./helper.js');
 // La clé
 const secretJwtKey = 'UnBonMatelasEmma';
 
+// ============= BDD =======================/
+// Preparer un model (une classe Person)
+const Movie = mongoose.model('Movie', { id: Number, title: String, synopsis: String, duration: String, year: String, thumbnail_url: String }, "movies");
+
+const User = mongoose.model('User', { email: String, pseudo: String, password: String }, "users");
+
+// Url mongo
+const urlMongo = "mongodb://mongdbuser:chocolatine@46.101.2.202:27017/db_movie?authSource=admin";
+
+//const urlMongo = "mongodb://46.101.2.202:27017/db_movie";
+
+// Connexion à la base
+mongoose.connect(urlMongo, { useNewUrlParser: true, useUnifiedTopology : true });
+
+// si connexion ok
+mongoose.connection.once('open', () => {
+    console.log("Connecté à la base Mongo !");
+});
+
+// si connexion error
+mongoose.connection.on('error', (error) => {
+    console.log("Erreur de connexion à la base Mongo !");
+});
 
 // ============= APPLICATION =======================/
 // Initialiser l'app
@@ -22,68 +46,6 @@ const swaggerDocument = require('./swagger_output.json');
 
 app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(swaggerDocument));
 
-// Fausse liste de films
-const MOVIES = [
-    {
-      id: 1,
-      title: "Inception",
-      synopsis: "A thief who enters the dreams of others to steal secrets from their subconscious.",
-      duration: "2h 28min",
-      year: "2010",
-      thumbnail_url: "https://example.com/inception-thumbnail.jpg"
-    },
-    {
-      id: 2,
-      title: "The Shawshank Redemption",
-      synopsis: "Two imprisoned men bond over a number of years, finding solace and eventual redemption through acts of common decency.",
-      duration: "2h 22min",
-      year: "1994",
-      thumbnail_url: "https://example.com/shawshank-redemption-thumbnail.jpg"
-    },
-    {
-      id: 3,
-      title: "The Dark Knight",
-      synopsis: "When the menace known as The Joker emerges from his mysterious past, he wreaks havoc and chaos on the people of Gotham.",
-      duration: "2h 32min",
-      year: "2008",
-      thumbnail_url: "https://example.com/dark-knight-thumbnail.jpg"
-    },
-    {
-      id: 4,
-      title: "Pulp Fiction",
-      synopsis: "The lives of two mob hitmen, a boxer, a gangster and his wife, and a pair of diner bandits intertwine in four tales of violence and redemption.",
-      duration: "2h 34min",
-      year: "1994",
-      thumbnail_url: "https://example.com/pulp-fiction-thumbnail.jpg"
-    },
-    {
-      id: 5,
-      title: "Forrest Gump",
-      synopsis: "The presidencies of Kennedy and Johnson, the Vietnam War, the Watergate scandal and other historical events unfold from the perspective of an Alabama man with an IQ of 75, whose only desire is to be reunited with his childhood sweetheart.",
-      duration: "2h 22min",
-      year: "1994",
-      thumbnail_url: "https://example.com/forrest-gump-thumbnail.jpg"
-    }
-  ];
-
-  const USERS = [
-    {
-      email: "john.doe@example.com",
-      pseudo: "johndoe",
-      password: "jd@123"
-    },
-    {
-      email: "alice.smith@example.com",
-      pseudo: "alicesmith",
-      password: "as@456"
-    },
-    {
-      email: "bob.jones@example.com",
-      pseudo: "bobjones",
-      password: "bj@789"
-    }
-  ];
-
 // Déclarer des routes
 app.get("/movies", async (request, response) => {
     /*
@@ -91,7 +53,7 @@ app.get("/movies", async (request, response) => {
     */
 
     // Select all avec mongodb
-    const movies = MOVIES;
+    const movies = await Movie.find();
 
     // Retourner la réponse
     return helper.buildResponse(response, "200", "Liste des films", movies);
@@ -103,7 +65,7 @@ app.get("/movies/:id", async (request, response) => {
     */
     const idRequest = parseInt(request.params.id);
 
-    const movie = MOVIES[0];
+    const movie = await Movie.findOne({ id: idRequest });
 
     return helper.buildResponse(response, "200", "Film récupéré avec succès", movie);
 });
@@ -114,12 +76,12 @@ app.post("/movies", async (request, response) => {
     */
     const data = request.body;
 
-    const movie = MOVIES[0];
+    const movie = await Movie.findOne({ id: data.id });
 
     // -- si trouver
     // En edition
     if (movie) {
-        const updatedMovie = MOVIES[0];
+        const updatedMovie = await Movie.findOneAndUpdate({ id: data.id }, data);
 
         return helper.buildResponse(response, "200", "Modification avec succès", updatedMovie);
     }
@@ -135,10 +97,10 @@ app.post("/signup", async (request, response) => {
     const data = { email: request.body.email, pseudo: request.body.pseudo, password: request.body.password};
    
     // instancer le model mongo
-    const user = USERS[0];
+    const user = User(data);
 
     // Save en base
-    const savedUser = user;
+    const savedUser = await user.save();
 
     // Si reussi
     if (savedUser){
@@ -154,7 +116,7 @@ app.post("/reset-password", async (request, response) => {
     const data = { email: request.body.email }
    
     // Cherche un user
-    const user = USERS[0];
+    const user = await User.findOne({email : data.email});
 
     // Si user existe
     if (user){
@@ -165,7 +127,7 @@ app.post("/reset-password", async (request, response) => {
         user.password = newPassword;
 
         // Sauvegarde en base
-        const validateUser = USERS[0];
+        const validateUser = await user.save();
 
         // Si reussi
         if (validateUser){
@@ -234,7 +196,7 @@ app.post("/login", async (request, response) => {
     const user = { email: request.body.email, password: request.body.password };
 
     // Verifier si couple user/password correcte
-    const foundUser = USERS[0];
+    const foundUser = await User.findOne({ email: user.email, password : user.password });
 
     // Si user trouvé en base
     if (foundUser){
